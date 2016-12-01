@@ -23,11 +23,11 @@ class ProfilePage extends React.Component {
 }
 
 /**
- * The Feed page. We created a new component just to fix the userId at 4.
+ * The Feed page. We created a new component just to fix the userId at "000000000000000000000004".
  */
 class FeedPage extends React.Component {
   render() {
-    return <Feed user={4} />;
+    return <Feed user={"000000000000000000000004"} />;
   }
 }
 
@@ -36,7 +36,7 @@ class FeedPage extends React.Component {
  */
 class SearchResultsPage extends React.Component {
   getSearchTerm() {
-    // If there's no query input to this page (e.g. /foo instead of /foo?bar=4),
+    // If there's no query input to this page (e.g. /foo instead of /foo?bar="000000000000000000000004"),
     // query may be undefined. We have to check for this, otherwise
     // JavaScript will throw an exception and die!
     var queryVars = this.props.location.query;
@@ -48,7 +48,7 @@ class SearchResultsPage extends React.Component {
     }
     return searchTerm;
   }
-  
+
   render() {
     var searchTerm = this.getSearchTerm();
     // By using the searchTerm as the key, React will create a new
@@ -68,13 +68,13 @@ class SearchResults extends React.Component {
       results: []
     };
   }
-  
+
   deleteFeedItem(id) {
     deleteFeedItem(id, () => {
       this.refresh();
     });
   }
-  
+
   refresh() {
     var searchTerm = this.props.searchTerm;
     if (searchTerm !== "") {
@@ -90,11 +90,11 @@ class SearchResults extends React.Component {
       });
     }
   }
-  
+
   componentDidMount() {
     this.refresh();
   }
-  
+
   render() {
     return (
       <div>
@@ -125,7 +125,7 @@ class SearchResults extends React.Component {
  */
 class App extends React.Component {
   render() {
-    // If there's no query input to this page (e.g. /foo instead of /foo?bar=4),
+    // If there's no query input to this page (e.g. /foo instead of /foo?bar="000000000000000000000004"),
     // query may be undefined. We have to check for this, otherwise
     // JavaScript will throw an exception and die!
     var queryVars = this.props.location.query;
