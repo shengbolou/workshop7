@@ -557,19 +557,20 @@ var ResetDatabase = require('./resetdatabase');
     var author = req.body.author;
     var feedItemId = req.params.feeditemid;
     if (fromUser === author) {
-      var feedItem = readDocument('feedItems', feedItemId);
-      // Initialize likeCounter to empty.
       comment.likeCounter = [];
-      // Push returns the new length of the array.
-      // The index of the new element is the length of the array minus 1.
-      // Example: [].push(1) returns 1, but the index of the new element is 0.
-      var index = feedItem.comments.push(comment) - 1;
-      writeDocument('feedItems', feedItem);
-      // 201: Created.
-      res.status(201);
-      res.set('Location', '/feeditem/' + feedItemId + "/comments/" + index);
-      // Return a resolved version of the feed item.
-      res.send(getFeedItemSync(feedItemId));
+      db.collection('feedItems').updateOne({_id:new ObjectID(feedItemId)},{$addToSet:{comments:comment}},function(err){
+        if(err)
+          sendDatabaseError(res,err);
+        else{
+          db.collection('feedItems').findOne({_id:new ObjectID(feedItemId)},function(err,feedItem){
+            if(err)
+              sendDatabaseError(res,err);
+            else {
+              res.send(feedItem);
+            }
+          })
+        }
+      });
     } else {
       // Unauthorized.
       res.status(401).end();
