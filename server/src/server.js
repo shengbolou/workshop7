@@ -554,18 +554,20 @@ var ResetDatabase = require('./resetdatabase');
     var author = req.body.author;
     var feedItemId = req.params.feeditemid;
     if (fromUser === author) {
+      comment.author = new ObjectID(comment.author);
       comment.likeCounter = [];
       db.collection('feedItems').updateOne({_id:new ObjectID(feedItemId)},{$push:{comments:comment}},function(err){
         if(err)
           sendDatabaseError(res,err);
         else{
-          db.collection('feedItems').findOne({_id:new ObjectID(feedItemId)},function(err,feedItem){
+          getFeedItem(new ObjectID(feedItemId), function(err,feedItem){
             if(err)
               sendDatabaseError(res,err);
-            else {
+            else{
+              console.log(feedItem);
               res.send(feedItem);
             }
-          })
+          });
         }
       });
     } else {
@@ -591,12 +593,13 @@ var ResetDatabase = require('./resetdatabase');
         if(err)
           sendDatabaseError(res,err);
         else{
-          db.collection('users').findOne({_id:feedItem.comments[commentIdx].author},function(err,result){
+          db.collection('users').findOne({_id:new ObjectID(feedItem.comments[commentIdx].author)},function(err,result){
             if(err)
               sendDatabaseError(res,err);
             else{
               feedItem.comments[commentIdx].author = result;
-              res.send(feedItem.comments[commentIdx]);
+              var comment = feedItem.comments[commentIdx];
+              res.send(comment);
             }
           });
         }
@@ -624,12 +627,13 @@ var ResetDatabase = require('./resetdatabase');
         if(err)
           sendDatabaseError(res,err);
         else{
-          db.collection('users').findOne({_id:feedItem.comments[commentIdx].author},function(err,result){
+          db.collection('users').findOne({_id:new ObjectID(feedItem.comments[commentIdx].author)},function(err,result){
             if(err)
               sendDatabaseError(res,err);
             else{
               feedItem.comments[commentIdx].author = result;
-              res.send(feedItem.comments[commentIdx]);
+              var comment = feedItem.comments[commentIdx];
+              res.send(comment);
             }
           });
         }
