@@ -4,9 +4,6 @@ var express = require('express');
 var app = express();
 // Parses response bodies.
 var bodyParser = require('body-parser');
-var database = require('./database');
-var readDocument = database.readDocument;
-var writeDocument = database.writeDocument;
 var StatusUpdateSchema = require('./schemas/statusupdate.json');
 var CommentSchema = require('./schemas/comment.json');
 var validate = require('express-jsonschema').validate;
@@ -558,7 +555,7 @@ var ResetDatabase = require('./resetdatabase');
     var feedItemId = req.params.feeditemid;
     if (fromUser === author) {
       comment.likeCounter = [];
-      db.collection('feedItems').updateOne({_id:new ObjectID(feedItemId)},{$addToSet:{comments:comment}},function(err){
+      db.collection('feedItems').updateOne({_id:new ObjectID(feedItemId)},{$push:{comments:comment}},function(err){
         if(err)
           sendDatabaseError(res,err);
         else{
@@ -579,21 +576,31 @@ var ResetDatabase = require('./resetdatabase');
 
   app.put('/feeditem/:feeditemid/comments/:commentindex/likelist/:userid', function(req, res) {
     var fromUser = getUserIdFromToken(req.get('Authorization'));
-    var userId = parseInt(req.params.userid, 10);
-    var feedItemId = parseInt(req.params.feeditemid, 10);
+    var userId = req.params.userid;
+    var feedItemId = req.params.feeditemid;
     var commentIdx = parseInt(req.params.commentindex, 10);
     // Only a user can mess with their own like.
     if (fromUser === userId) {
-      var feedItem = readDocument('feedItems', feedItemId);
-      var comment = feedItem.comments[commentIdx];
-      // Only change the likeCounter if the user isn't in it.
-      if (comment.likeCounter.indexOf(userId) === -1) {
-        comment.likeCounter.push(userId);
-      }
-      writeDocument('feedItems', feedItem);
-      comment.author = readDocument('users', comment.author);
-      // Send back the updated comment.
-      res.send(comment);
+      db.collection("feedItems").updateOne(
+        {_id:new ObjectID(feedItemId)},
+        {$addToSet:{[`comments.${commentIdx}.likeCounter`]:new ObjectID(userId)}},function(err){
+          if(err)
+            sendDatabaseError(res,err);
+        });
+      db.collection("feedItems").findOne({_id:new ObjectID(feedItemId)},function(err,feedItem){
+        if(err)
+          sendDatabaseError(res,err);
+        else{
+          db.collection('users').findOne({_id:feedItem.comments[commentIdx].author},function(err,result){
+            if(err)
+              sendDatabaseError(res,err);
+            else{
+              feedItem.comments[commentIdx].author = result;
+              res.send(feedItem.comments[commentIdx]);
+            }
+          });
+        }
+      });
     } else {
       // Unauthorized.
       res.status(401).end();
@@ -602,20 +609,31 @@ var ResetDatabase = require('./resetdatabase');
 
   app.delete('/feeditem/:feeditemid/comments/:commentindex/likelist/:userid', function(req, res) {
     var fromUser = getUserIdFromToken(req.get('Authorization'));
-    var userId = parseInt(req.params.userid, 10);
-    var feedItemId = parseInt(req.params.feeditemid, 10);
+    var userId = req.params.userid;
+    var feedItemId = req.params.feeditemid;
     var commentIdx = parseInt(req.params.commentindex, 10);
     // Only a user can mess with their own like.
     if (fromUser === userId) {
-      var feedItem = readDocument('feedItems', feedItemId);
-      var comment = feedItem.comments[commentIdx];
-      var userIndex = comment.likeCounter.indexOf(userId);
-      if (userIndex !== -1) {
-        comment.likeCounter.splice(userIndex, 1);
-        writeDocument('feedItems', feedItem);
-      }
-      comment.author = readDocument('users', comment.author);
-      res.send(comment);
+      db.collection("feedItems").updateOne(
+        {_id:new ObjectID(feedItemId)},
+        {$pull:{[`comments.${commentIdx}.likeCounter`]:new ObjectID(userId)}},function(err){
+          if(err)
+            sendDatabaseError(res,err);
+        });
+      db.collection("feedItems").findOne({_id:new ObjectID(feedItemId)},function(err,feedItem){
+        if(err)
+          sendDatabaseError(res,err);
+        else{
+          db.collection('users').findOne({_id:feedItem.comments[commentIdx].author},function(err,result){
+            if(err)
+              sendDatabaseError(res,err);
+            else{
+              feedItem.comments[commentIdx].author = result;
+              res.send(feedItem.comments[commentIdx]);
+            }
+          });
+        }
+      });
     } else {
       // Unauthorized.
       res.status(401).end();
