@@ -564,7 +564,6 @@ var ResetDatabase = require('./resetdatabase');
             if(err)
               sendDatabaseError(res,err);
             else{
-              console.log(feedItem);
               res.send(feedItem);
             }
           });
